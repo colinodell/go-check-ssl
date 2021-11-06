@@ -4,13 +4,16 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/cloudflare/cfssl/log"
+	"github.com/cloudflare/cfssl/revoke"
+	"github.com/dustin/go-humanize"
 	"net"
 	"net/url"
 	"os"
 	"reflect"
 	"strings"
 
-	"github.com/dustin/go-humanize"
+	. "github.com/logrusorgru/aurora"
 )
 
 func main() {
@@ -30,6 +33,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	log.SetLogger(new(logger))
+
 	input := os.Args[1]
 	if !strings.Contains(input, "://") {
 		input = "https://" + input
@@ -37,7 +42,7 @@ func main() {
 
 	parsedUrl, err := url.Parse(input)
 	if err != nil {
-		fmt.Printf("Invalid URL: %s\n", err)
+		fmt.Println(Red("Invalid URL: " + err.Error()))
 		os.Exit(1)
 	}
 
@@ -62,31 +67,55 @@ func main() {
 
 	server += ":" + port
 
-	fmt.Printf("Connecting to %s as %s...\n\n", server, hostname)
+	fmt.Printf("Connecting to %s as %s...\n", server, hostname)
 
-	var valid bool
+	valid := true
+
 	if err := checkIfCertValid(server, hostname); err != nil {
 		valid = false
-		fmt.Printf("ERROR: %s\n\n", err)
+		log.Warningf("Failed to verify cert by connecting to the server: %s", err)
 	} else {
-		valid = true
-		fmt.Printf("Cert seems to be valid\n\n")
+		fmt.Println(Green("Successfully connected to server"))
 	}
+
+	fmt.Println("")
 
 	cert, err := getCert(server, hostname)
 	if err != nil {
-		fmt.Printf("ERROR: %s\n", err)
+		log.Errorf("Failed to load the cert by connecting to the server: %s", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Issued by:  %s\n", split(cert.Issuer, 12))
+	fmt.Printf("Issued by:  %s\n", splitLines(cert.Issuer, 12))
+	fmt.Printf("Issued:     %s (%s)\n", cert.NotBefore.String(), humanize.Time(cert.NotBefore))
+	fmt.Printf("Expires:    %s (%s)\n", cert.NotAfter.String(), humanize.Time(cert.NotAfter))
 
 	fmt.Printf("Subject:    %s\n", cert.Subject)
-	fmt.Printf("DNS Names:  %s\n", split(cert.DNSNames, 12))
+	fmt.Printf("DNS Names:  %s\n", splitLines(cert.DNSNames, 12))
 
-	fmt.Printf("Expires:    %s (%s)\n", humanize.Time(cert.NotAfter), cert.NotAfter.String())
+	fmt.Println()
 
-	if !valid {
+	revoked, ok, err := revoke.VerifyCertificateError(cert)
+
+	if revoked {
+		valid = false
+	}
+
+	if ! ok {
+		valid = false
+		log.Warning("Failed to verify certificate revocation status")
+	}
+
+	if err != nil {
+                valid = false
+                log.Warningf("Failed to verify certificate revocation status: %s", err)
+        }
+
+	if valid {
+		fmt.Println(Green("Certificate seems to be valid"))
+		os.Exit(0)
+        } else {
+                fmt.Println(Red("Certificate is invalid"))
 		os.Exit(1)
 	}
 }
@@ -121,7 +150,7 @@ func getCert(server, hostname string) (*x509.Certificate, error) {
 	return conn.ConnectionState().PeerCertificates[0], nil
 }
 
-func split(value interface{}, padding int) string {
+func splitLines(value interface{}, padding int) string {
 	var lines []string
 
 	if reflect.TypeOf(value).Kind() == reflect.Slice {
