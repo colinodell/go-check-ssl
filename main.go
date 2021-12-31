@@ -20,11 +20,13 @@ import (
 var (
 	server  = kingpin.Arg("host", "Hostname, IP, or URL of the server to check.").String()
 	sni     = kingpin.Flag("sni", "SNI server to use for the certificate (optional).").Short('s').String()
+	version = "dev"
 )
 
 func main() {
 	log.SetLogger(new(logger))
 
+	kingpin.Version(version)
 	kingpin.Parse()
 	if server == nil || *server == "" {
 		kingpin.Usage()

@@ -28,7 +28,7 @@ builds:
       - goos: darwin
         goarch: 386
     binary: '{{ .ProjectName }}'
-    ldflags: -s -w
+    ldflags: -s -w -X 'main.version={{ .Version }}'
     flags:
       - -trimpath
 
@@ -67,6 +67,8 @@ brews:
     homepage: https://github.com/colinodell/go-check-ssl
     description: Simple command line utility to check the status of an SSL certificate
     license: MIT
+    test: |
+      system "#{bin}/check-ssl --version"
     install: |-
       bin.install "{{ .ProjectName }}"
 
