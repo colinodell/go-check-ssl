@@ -7,6 +7,7 @@ import (
 	"github.com/cloudflare/cfssl/log"
 	"github.com/cloudflare/cfssl/revoke"
 	"github.com/dustin/go-humanize"
+	"gopkg.in/alecthomas/kingpin.v2"
 	"net"
 	"net/url"
 	"os"
@@ -16,26 +17,21 @@ import (
 	. "github.com/logrusorgru/aurora"
 )
 
+var (
+	server  = kingpin.Arg("host", "Hostname, IP, or URL of the server to check.").String()
+	sni     = kingpin.Flag("sni", "SNI server to use for the certificate (optional).").Short('s').String()
+)
+
 func main() {
-	if len(os.Args) < 2 || len(os.Args) > 3 {
-		fmt.Print("go-check-ssl: Simple command line utility to check the status of an SSL certificate.\n\n")
-		fmt.Printf("Usage: %s server [domain]\n", os.Args[0])
-		fmt.Println()
-		fmt.Print("Arguments:\n")
-		fmt.Print("  - 'server' should be any valid hostname, IP, or URL to test\n")
-		fmt.Print("  - '[domain]' allows you to provide an arbitrary domain name to use for SNI\n")
-		fmt.Println()
-		fmt.Print("Example usage:\n")
-		fmt.Printf("  - %s example.com\n", os.Args[0])
-		fmt.Printf("  - %s https://www.example.com:443/foo/bar\n", os.Args[0])
-		fmt.Printf("  - %s 93.184.216.34 www.example.com\n", os.Args[0])
-		fmt.Printf("  - %s 93.184.216.34:443 www.example.com\n", os.Args[0])
+	log.SetLogger(new(logger))
+
+	kingpin.Parse()
+	if server == nil || *server == "" {
+		kingpin.Usage()
 		os.Exit(1)
 	}
 
-	log.SetLogger(new(logger))
-
-	input := os.Args[1]
+	input := *server
 	if !strings.Contains(input, "://") {
 		input = "https://" + input
 	}
@@ -46,7 +42,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Hostname is used for SNI
+	// Hostname is used for SNI by default
 	hostname := parsedUrl.Hostname()
 	// Server is used for the underlying connection
 	server := hostname
@@ -55,9 +51,9 @@ func main() {
 		port = "443"
 	}
 
-	// Did the user provide a different hostname to use for SNI?
-	if len(os.Args) > 2 {
-		hostname = os.Args[2]
+	// Did the user provide a different server to use for SNI?
+	if sni != nil && *sni != "" {
+		hostname = *sni
 	}
 
 	// Resolve the IP of the server
