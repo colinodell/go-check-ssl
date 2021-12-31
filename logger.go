@@ -30,4 +30,3 @@ func (l *logger) Crit(message string) {
 func (l *logger) Emerg(message string) {
 	fmt.Print(aurora.Red(message))
 }
-

@@ -97,21 +97,21 @@ func main() {
 		valid = false
 	}
 
-	if ! ok {
+	if !ok {
 		valid = false
 		log.Warning("Failed to verify certificate revocation status")
 	}
 
 	if err != nil {
-                valid = false
-                log.Warningf("Failed to verify certificate revocation status: %s", err)
-        }
+		valid = false
+		log.Warningf("Failed to verify certificate revocation status: %s", err)
+	}
 
 	if valid {
 		fmt.Println(Green("Certificate seems to be valid"))
 		os.Exit(0)
-        } else {
-                fmt.Println(Red("Certificate is invalid"))
+	} else {
+		fmt.Println(Red("Certificate is invalid"))
 		os.Exit(1)
 	}
 }
@@ -134,7 +134,7 @@ func checkIfCertValid(server, hostname string) error {
 func getCert(server, hostname string) (*x509.Certificate, error) {
 	conf := &tls.Config{
 		InsecureSkipVerify: true,
-		ServerName: hostname,
+		ServerName:         hostname,
 	}
 
 	conn, err := tls.Dial("tcp", server, conf)
