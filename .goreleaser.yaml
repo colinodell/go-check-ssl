@@ -1,0 +1,84 @@
+project_name: go-check-ssl
+
+before:
+  hooks:
+    - go mod download
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - 386
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+      - goos: darwin
+        goarch: 386
+    binary: '{{ .ProjectName }}'
+    ldflags: -s -w
+    flags:
+      - -trimpath
+
+archives:
+  - name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+universal_binaries:
+  - replace: true
+    name_template: '{{ .ProjectName }}'
+
+release:
+  footer: |
+    **Full Changelog**: https://github.com/colinodell/go-check-ssl/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+brews:
+  - tap:
+      owner: colinodell
+      name: homebrew-tap
+    commit_author:
+      name: Colin O'Dell
+      email: colinodell@gmail.com
+    folder: Formula
+    goarm: "7"
+    homepage: https://github.com/colinodell/go-check-ssl
+    description: Simple command line utility to check the status of an SSL certificate
+    license: MIT
+    install: |-
+      bin.install "{{ .ProjectName }}"
+
+nfpms:
+  - file_name_template: '{{ .ConventionalFileName }}'
+    id: packages
+    homepage: https://github.com/colinodell/go-check-ssl
+    description: Simple command line utility to check the status of an SSL certificate
+    maintainer: Colin O'Dell <colinodell@gmail.com>
+    license: MIT
+    vendor: Colin O'Dell
+    formats:
+      - apk
+      - deb
+      - rpm
