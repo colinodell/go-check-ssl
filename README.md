@@ -11,10 +11,10 @@ Either build it yourself or grab a pre-compiled download from the [Releases](htt
 To check a certificate, simply run:
 
 ```bash
-./go-check-ssl [domain]
+./check-ssl [domain]
 ```
 
-![](screenshot-1.png)
+![](screenshot.png)
 
 Example of allowed arguments include:
 
@@ -25,7 +25,5 @@ Example of allowed arguments include:
 By default, it'll resolve the IP of the given domain and test against that server.  But you can also use this tool to check other servers by providing two arguments: the server to test and the SNI to use.  For example:
 
 ```bash
-./go-check-ssl [server] [SNI domain]
+./check-ssl [server] [SNI domain]
 ```
-
-![](screenshot-2.png)
